@@ -2,13 +2,10 @@ require 'rubygems'
 require 'net-ldap'
 
 class Iptables
-#iptables -t nat -N 10.9.0.6
-#iptables -t nat -A POSTROUTING -s 10.9.0.6 -j 10.9.0.6
-#iptables -t nat -A 10.9.0.6 -d 10.128.32.76/32 -o eth0 -j MASQUERADE
-
   def initialize (table)
     @table = table
   end
+  
   def append_entry (chain, rule)
     if rule['destination']
       `/sbin/iptables -t #{@table} -A #{chain} #{rule['destination']} -o #{rule['out-interface']} -j #{rule['jump']}`
@@ -16,33 +13,35 @@ class Iptables
       `/sbin/iptables -t #{@table} -A #{chain} -s #{rule['source']} -j #{rule['jump']}`
     end
   end
+  
   def delete_entry (chain, rule)
     `/sbin/iptables -t #{@table} -D #{chain} -s #{rule['source']} -j #{rule['jump']}`
   end
-  def is_chain?
-  end
+  
   def create_chain (chain)
     `/sbin/iptables -t #{@table} -N #{chain}`
   end
+  
   def flush_entries (chain)
     `/sbin/iptables -t #{@table} -F #{chain}`
   end
+  
   def delete_chain (chain)
     `/sbin/iptables -t #{@table} -X #{chain}`
   end
 end
 
-class Vpn
-  def initialize (user, remote_ip)
-    @ldap_host = "ldap.nelen.me"
-    @ldap_base = "ou=RoutingGroups,ou=apps,dc=nelen,dc=me"
-    @ldap_userdn = "uid=#{user},ou=people,dc=nelen,dc=me"
-    @rule_out_inteface = "eth0" 
-    @rule_jump = "MASQUERADE"
-    @alter_rule_jump = "ACCEPT"
-    @dns_servers = ["10.10.0.35","10.10.1.35"] 
-    @user = user
-    @remote_ip = remote_ip
+class Client
+  def initialize (args)
+    @ldap_host = args[:ldap_host]
+    @ldap_base = args[:ldap_base]
+    @ldap_userdn = args[:ldap_userdn]
+    @rule_out_inteface = args[:rule_out_inteface] 
+    @rule_jump = args[:rule_jump]
+    @alter_rule_jump = args[:alter_rule_jump]
+    @dns_servers = args[:dns_servers] 
+    @user = args[:user]
+    @remote_ip = args[:remote_ip]
   end 
 
   def connect
@@ -54,6 +53,8 @@ class Vpn
   def disconnect
     delete_iptables_rules  
   end
+
+private
   def connect_ldap
     ldap = Net::LDAP.new
     ldap.host = @ldap_host
@@ -105,6 +106,7 @@ class Vpn
     natt.append_entry("POSTROUTING", {"source" => @remote_ip, "jump" => @remote_ip}) 
     filtert.append_entry("FORWARD", {"source" => @remote_ip, "jump" => @remote_ip})
   end
+ 
   def delete_iptables_rules 
     puts "Cleaning up after ourselves"
     natt = Iptables.new("nat")
@@ -119,13 +121,21 @@ class Vpn
   end
 end
 
-common_name = ARGV[0]
+user = ARGV[0]
 remote_ip = ARGV[1]
-connection = ARGV[2]
-client = Vpn.new(common_name, remote_ip)
-if connection == "connect"
-  client.connect
-else
-  client.disconnect
-end
+action = ARGV[2]
+
+client = Client.new(
+  :user => user,
+  :remote_ip => remote_ip,
+  :ldap_host => "ldap.helios.me",
+  :ldap_base => "ou=RoutingGroups,ou=apps,dc=helios,dc=me",
+  :ldap_userdn => "uid=#{user},ou=people,dc=helios,dc=me",
+  :rule_out_inteface => "eth0", 
+  :rule_jump => "MASQUERADE",
+  :alter_rule_jump => "ACCEPT",
+  :dns_servers => ["10.10.0.35","10.10.1.35"] ) 
+
+
+action == "connect" ? (client.connect) : (client.disconnect)
 
