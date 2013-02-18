@@ -52,3 +52,12 @@ Script get this rules and create iptables chain named by client's ip.
 Also it creates rule that forward all client traffic to this chain and add this rules to this chain.
 You can also specify dns servers in script to allow access to it for all clients.
 When client disconnects it removes this chain and rules in 60 seconds - ( keepalive 10 60 directive in server.conf)
+
+
+##To Do
+-  Now it using nat - maybe we can do it without it
+-  Some checks should be added to script
+-  Logging should be added to script
+-  Port based rules 
+-  DRY add_iptables_rules and delete_iptables_rules methods
+
