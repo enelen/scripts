@@ -4,7 +4,7 @@
 Juniper switches can send config file to remote server after each commit. We will use scp for it.
 Backups will be stored at /home/juniper/<switch hostname>
 
-##Configuration
+##Juniper configuration
 
 Run next command on switch in freebsd mode (it should be % in prompt) -
 ```
@@ -25,8 +25,17 @@ set system archival configuration transfer-on-commit
 set system archival configuration archive-sites "scp://juniper@<your server IP>:/home/juniper/<switch hostname>"
 ```
 You should create /home/juniper/\<switch hostname\> on your server and add juniper_git_backup.rb script to cron.
+Create directories for git repository and backups. Init git repository.
 
+##Script configuration
 
+Edit next lines in the script according your environment
+```
+configs_path = '/home/juniper'
+backup_path = '/home/juniper/backup'
+repo_path = '/home/juniper/juniper/repo'
+switches = [...]
+```
 
 
 
